@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAG Organization Structure Presentation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tagOrange: '#f1932a',
+                        tagOrangeDark: '#d97706',
+                        tagDark: '#0f172a',
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0b0f19;
+            color: #1e293b;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+            overflow-x: hidden;
+        }
+
+        /* Slide Frame Container */
+        .slide-frame {
+            width: 100%;
+            max-width: 1440px;
+            height: 820px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+            position: relative;
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+            padding: 20px 24px;
+            border: 3px solid #f1932a;
+        }
+
+        .slide-frame.active {
+            display: flex;
+        }
+
+        /* Slide Header */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            border-bottom: 2px solid #fef3c7;
+            padding-bottom: 8px;
+            z-index: 10;
+        }
+
+        .tag-badge {
+            background-color: #f1932a;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 12px;
+            padding: 4px 14px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Hierarchy Tree Canvas Viewport */
+        .tree-viewport {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 15px 20px 40px 20px;
+            position: relative;
+            user-select: none;
+        }
+
+        /* Tree Structure CSS */
+        .tree-root, .tree-node-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transition: transform 0.25s ease-out;
+            transform-origin: top center;
+        }
+
+        .tree-children {
+            display: flex;
+            justify-content: center;
+            position: relative;
+            padding-top: 20px;
+            margin-top: 2px;
+        }
+
+        /* Vertical Connector from Parent */
+        .tree-children::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            border-left: 2px solid #f1932a;
+            width: 0;
+            height: 20px;
+            transform: translateX(-50%);
+        }
+
+        /* Horizontal Connectors across siblings */
+        .tree-children > .tree-node-group::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            width: 100%;
+            border-top: 2px solid #f1932a;
+        }
+
+        .tree-children > .tree-node-group:first-child::before {
+            width: 50%;
+            right: 0;
+            left: auto;
+        }
+
+        .tree-children > .tree-node-group:last-child::before {
+            width: 50%;
+            left: 0;
+        }
+
+        .tree-children > .tree-node-group:only-child::before {
+            display: none;
+        }
+
+        /* Vertical Line directly above a node */
+        .tree-children > .tree-node-group::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            height: 20px;
+            border-left: 2px solid #f1932a;
+            transform: translateX(-50%);
+        }
+
+        .node-card {
+            background: #ffffff;
+            border: 2px solid #f1932a;
+            border-radius: 10px;
+            padding: 6px 8px;
+            min-width: 110px;
+            max-width: 145px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(241, 147, 42, 0.12);
+            position: relative;
+            transition: all 0.2s ease;
+            margin: 0 3px;
+            cursor: pointer;
+        }
+
+        .node-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(241, 147, 42, 0.25);
+            border-color: #ea580c;
+        }
+
+        .node-card.selected {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+            background-color: #eff6ff;
+        }
+
+        .node-card.search-match {
+            border-color: #16a34a;
+            box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.4);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(241, 147, 42, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(241, 147, 42, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(241, 147, 42, 0); }
+        }
+
+        .node-avatar {
+            width: 26px;
+            height: 26px;
+            background-color: #fff7ed;
+            color: #f1932a;
+            border: 1.5px solid #f1932a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 3px auto;
+        }
+
+        .node-name {
+            font-weight: 700;
+            font-size: 11px;
+            color: #0f172a;
+            line-height: 1.2;
+            outline: none;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .node-title {
+            font-size: 9.5px;
+            font-weight: 600;
+            color: #d97706;
+            margin-top: 1px;
+            line-height: 1.15;
+            outline: none;
+            word-break: break-word;
+        }
+
+        .node-dept {
+            font-size: 8.5px;
+            color: #64748b;
+            font-weight: 500;
+            outline: none;
+            word-break: break-word;
+        }
+
+        .node-loc {
+            display: inline-block;
+            margin-top: 2px;
+            background-color: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+            font-size: 8px;
+            font-weight: 600;
+            padding: 1px 5px;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .node-dept {
+            font-size: 9px;
+            color: #64748b;
+            font-weight: 500;
+            outline: none;
+        }
+
+        .node-loc {
+            display: inline-block;
+            margin-top: 3px;
+            background-color: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+            font-size: 8.5px;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        /* Action Controls Toolbar Overlay on Node Hover/Focus */
+        .node-actions {
+            position: absolute;
+            top: -14px;
+            right: 50%;
+            transform: translateX(50%);
+            display: none;
+            gap: 4px;
+            background: #0f172a;
+            padding: 2px 6px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 20;
+        }
+
+        .node-card:hover .node-actions,
+        .node-card.selected .node-actions {
+            display: flex;
+        }
+
+        .action-btn {
+            background-color: #f1932a;
+            color: white;
+            border: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.15s, background-color 0.15s;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.2);
+            background-color: #ea580c;
+        }
+
+        .action-btn.delete-btn {
+            background-color: #ef4444;
+        }
+        .action-btn.delete-btn:hover {
+            background-color: #dc2626;
+        }
+
+        /* Title Slide Layout */
+        .title-slide {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #ffffff 0%, #fff8f0 100%);
+            border-radius: 14px;
+            border: 2px solid #f1932a;
+        }
+
+        .controls-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 14px;
+            background-color: #1e293b;
+            padding: 10px 20px;
+            border-radius: 40px;
+            border: 1px solid #334155;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            flex-wrap: wrap;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .btn-ctrl {
+            background-color: #f1932a;
+            color: #ffffff;
+            font-weight: 600;
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 12.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: none;
+        }
+
+        .btn-ctrl:hover {
+            background-color: #d97706;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #334155;
+            color: #f8fafc;
+        }
+
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+
+        .btn-success {
+            background-color: #16a34a;
+            color: #ffffff;
+        }
+        .btn-success:hover {
+            background-color: #15803d;
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .legend-box {
+            display: flex;
+            gap: 10px;
+            font-size: 10px;
+            color: #475569;
+            background-color: #fffcf8;
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid #fed7aa;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #f1932a;
+        }
+
+        /* Edit & Confirm Modals */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 420px;
+            max-width: 90vw;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border: 2px solid #f1932a;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .controls-bar, .node-actions {
+                display: none !important;
+            }
+            .slide-frame {
+                display: flex !important;
+                page-break-after: always;
+                box-shadow: none;
+                border: 2px solid #f1932a;
+                margin-bottom: 20px;
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SLIDE 1: TITLE COVER SLIDE -->
+    <div class="slide-frame active" id="slide-1">
+        <div class="title-slide">
+            <div class="tag-badge" style="margin-bottom: 20px; font-size: 15px; padding: 6px 22px;">TAG STRUCTURE</div>
+            <h1 style="font-size: 50px; font-weight: 800; color: #0f172a; line-height: 1.1; margin-bottom: 14px;">
+                ORGANIZATION <span style="color: #f1932a;">HIERARCHY</span>
+            </h1>
+            <p style="font-size: 17px; color: #64748b; max-width: 820px; margin-bottom: 30px;">
+                Organization Structure Presentation mapping Leadership, Data Engineering, Consulting, and Data Science.
+            </p>
+            <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <div style="background: #ffffff; border: 2px solid #f1932a; padding: 8px 20px; border-radius: 30px; font-weight: 600; color: #0f172a; font-size: 13px;">
+                    <i class="fa-solid fa-database" style="color: #f1932a; margin-right: 8px;"></i> Data Engineering
+                </div>
+                <div style="background: #ffffff; border: 2px solid #f1932a; padding: 8px 20px; border-radius: 30px; font-weight: 600; color: #0f172a; font-size: 13px;">
+                    <i class="fa-solid fa-briefcase" style="color: #f1932a; margin-right: 8px;"></i> Consulting
+                </div>
+                <div style="background: #ffffff; border: 2px solid #f1932a; padding: 8px 20px; border-radius: 30px; font-weight: 600; color: #0f172a; font-size: 13px;">
+                    <i class="fa-solid fa-brain" style="color: #f1932a; margin-right: 8px;"></i> Data Science
+                </div>
+            </div>
+        </div>
+        <div style="position: absolute; bottom: 14px; right: 30px; font-size: 11px; color: #94a3b8; font-weight: 500;">
+            TAG Organization Architecture | Cover Slide
+        </div>
+    </div>
+
+    <!-- SLIDE 2: DATA ENGINEERING ORG CHART -->
+    <div class="slide-frame" id="slide-2">
+        <div class="slide-header">
+            <div>
+                <h2 style="font-size: 20px; font-weight: 700; color: #0f172a;">DATA ENGINEERING HIERARCHY</h2>
+                <p style="font-size: 11px; color: #64748b;">Reporting Tree — Data Warehousing, BDE, COE & Data Governance</p>
+            </div>
+            <div class="legend-box">
+                <div class="legend-item"><span class="legend-dot"></span> BDE: Big Data Engineering</div>
+                <div class="legend-item"><span class="legend-dot"></span> DWBI: Data Warehousing & BI</div>
+                <div class="legend-item"><span class="legend-dot"></span> DG: Data Governance</div>
+                <div class="legend-item"><span class="legend-dot"></span> COE: Center of Excellence</div>
+            </div>
+            <div class="tag-badge">DE Stream</div>
+        </div>
+
+        <div class="tree-viewport" id="tree-container-de">
+            <!-- Dynamic Tree Rendered by JS -->
+        </div>
+        <div style="position: absolute; bottom: 10px; right: 30px; font-size: 10.5px; color: #94a3b8; font-weight: 500;">
+            TAG Organization Architecture | Data Engineering
+        </div>
+    </div>
+
+    <!-- SLIDE 3: CONSULTING ORG CHART -->
+    <div class="slide-frame" id="slide-3">
+        <div class="slide-header">
+            <div>
+                <h2 style="font-size: 20px; font-weight: 700; color: #0f172a;">CONSULTING HIERARCHY</h2>
+                <p style="font-size: 11px; color: #64748b;">Reporting Tree — Consulting, Sales, QE, Account Management & Enabling Functions</p>
+            </div>
+            <div class="legend-box">
+                <div class="legend-item"><span class="legend-dot"></span> QE: Quality Engineering</div>
+                <div class="legend-item"><span class="legend-dot"></span> PS: Practice Support</div>
+                <div class="legend-item"><span class="legend-dot"></span> AM & EF: Account Mgmt & Enabling Functions</div>
+            </div>
+            <div class="tag-badge">Consulting Stream</div>
+        </div>
+
+        <div class="tree-viewport" id="tree-container-consulting">
+            <!-- Dynamic Tree Rendered by JS -->
+        </div>
+        <div style="position: absolute; bottom: 10px; right: 30px; font-size: 10.5px; color: #94a3b8; font-weight: 500;">
+            TAG Organization Architecture | Consulting
+        </div>
+    </div>
+
+    <!-- SLIDE 4: DATA SCIENCE ORG CHART -->
+    <div class="slide-frame" id="slide-4">
+        <div class="slide-header">
+            <div>
+                <h2 style="font-size: 20px; font-weight: 700; color: #0f172a;">DATA SCIENCE HIERARCHY</h2>
+                <p style="font-size: 11px; color: #64748b;">Reporting Tree — Machine Learning Engineering, Application Engineering & Data AI Labs</p>
+            </div>
+            <div class="legend-box">
+                <div class="legend-item"><span class="legend-dot"></span> MLSE: Machine Learning Engineering</div>
+                <div class="legend-item"><span class="legend-dot"></span> AE: Application Engineering</div>
+                <div class="legend-item"><span class="legend-dot"></span> DS: Data Science</div>
+            </div>
+            <div class="tag-badge">DS Stream</div>
+        </div>
+
+        <div class="tree-viewport" id="tree-container-ds">
+            <!-- Dynamic Tree Rendered by JS -->
+        </div>
+        <div style="position: absolute; bottom: 10px; right: 30px; font-size: 10.5px; color: #94a3b8; font-weight: 500;">
+            TAG Organization Architecture | Data Science
+        </div>
+    </div>
+
+    <!-- SLIDE 5: THANK YOU SLIDE -->
+    <div class="slide-frame" id="slide-5">
+        <div class="title-slide">
+            <h1 style="font-size: 60px; font-weight: 800; color: #f1932a; line-height: 1.1; margin-bottom: 16px;">
+                Thank You
+            </h1>
+            <p style="font-size: 19px; color: #64748b; max-width: 650px;">
+                TAG Organization Structure Framework & Hierarchy Architecture
+            </p>
+        </div>
+        <div style="position: absolute; bottom: 14px; right: 30px; font-size: 11px; color: #94a3b8; font-weight: 500;">
+            TAG Organization Architecture | End Slide
+        </div>
+    </div>
+
+    <!-- NAVIGATION AND EDIT CONTROLS BAR -->
+    <div class="controls-bar">
+        <button class="btn-ctrl btn-secondary" id="btn-prev" onclick="changeSlide(-1)">
+            <i class="fa-solid fa-chevron-left"></i> Prev
+        </button>
+        <span style="color: #94a3b8; font-size: 12.5px; font-weight: 600;" id="slide-indicator">Slide 1 of 5</span>
+        <button class="btn-ctrl" id="btn-next" onclick="changeSlide(1)">
+            Next <i class="fa-solid fa-chevron-right"></i>
+        </button>
+
+        <div style="height: 20px; width: 1px; background-color: #475569; margin: 0 4px;"></div>
+
+        <!-- Search Input -->
+        <div style="position: relative; display: flex; align-items: center;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; color: #94a3b8; font-size: 11px;"></i>
+            <input type="text" id="search-input" oninput="searchOrgTree(this.value)" placeholder="Search name/role..." style="background-color: #0f172a; border: 1px solid #475569; color: #f8fafc; padding: 5px 10px 5px 28px; border-radius: 16px; font-size: 11.5px; outline: none; width: 150px;">
+        </div>
+
+        <button class="btn-ctrl btn-success" onclick="addNewRootOrReportee()" title="Add a new member to current chart">
+            <i class="fa-solid fa-user-plus"></i> Add Member
+        </button>
+
+        <button class="btn-ctrl btn-secondary" onclick="exportOrgData()" title="Save / Download JSON Structure">
+            <i class="fa-solid fa-download"></i> Save Data
+        </button>
+
+        <button class="btn-ctrl btn-secondary" onclick="resetDefaultTree()" title="Reset to initial structure">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+        </button>
+
+        <button class="btn-ctrl btn-secondary" onclick="window.print()">
+            <i class="fa-solid fa-print"></i> Export PDF
+        </button>
+    </div>
+
+    <!-- EDIT MEMBER MODAL -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <h3 style="font-weight: 700; font-size: 16px; color: #0f172a;" id="modal-title">Edit Team Member</h3>
+                <button onclick="closeModal()" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer;">&times;</button>
+            </div>
+
+            <form id="edit-node-form" onsubmit="saveNodeModal(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                <input type="hidden" id="edit-node-id">
+                <div>
+                    <label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Full Name</label>
+                    <input type="text" id="input-name" required style="width: 100%; border: 1.5px solid #cbd5e1; padding: 7px 12px; border-radius: 8px; font-size: 13px; outline: none;">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Title / Designation</label>
+                    <input type="text" id="input-title" required style="width: 100%; border: 1.5px solid #cbd5e1; padding: 7px 12px; border-radius: 8px; font-size: 13px; outline: none;">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Department / Group (Optional)</label>
+                    <input type="text" id="input-dept" placeholder="e.g. (Azure BDE)" style="width: 100%; border: 1.5px solid #cbd5e1; padding: 7px 12px; border-radius: 8px; font-size: 13px; outline: none;">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Location</label>
+                    <select id="input-loc" style="width: 100%; border: 1.5px solid #cbd5e1; padding: 7px 12px; border-radius: 8px; font-size: 13px; outline: none;">
+                        <option value="Chennai">Chennai</option>
+                        <option value="Bangalore">Bangalore</option>
+                        <option value="Hyderabad">Hyderabad</option>
+                        <option value="Gurgaon">Gurgaon</option>
+                        <option value="US">US</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="closeModal()" class="btn-ctrl btn-secondary" style="border-radius: 8px;">Cancel</button>
+                    <button type="submit" class="btn-ctrl" style="border-radius: 8px;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRM DELETE MODAL -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #fee2e2; padding-bottom: 8px;">
+                <h3 style="font-weight: 700; font-size: 16px; color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Confirm Delete</h3>
+                <button onclick="closeDeleteModal()" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer;">&times;</button>
+            </div>
+            <p style="font-size: 13px; color: #334155; margin-bottom: 20px; line-height: 1.5;" id="delete-modal-msg">
+                Are you sure you want to delete this member and all associated reportees?
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeDeleteModal()" class="btn-ctrl btn-secondary" style="border-radius: 8px;">Cancel</button>
+                <button type="button" onclick="executePendingDelete()" class="btn-ctrl btn-danger" style="border-radius: 8px;">Delete Branch</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DATA MODELS FOR THE THREE STREAMS
+        const initialData = {
+            de: {
+                id: "de_root",
+                name: "Sanjay Sundaram",
+                title: "Vice President",
+                dept: "",
+                loc: "",
+                children: [
+                    {
+                        id: "de_ayswarya",
+                        name: "Ayswarya Jayasuriyan",
+                        title: "Senior Director",
+                        dept: "(Data Engineering)",
+                        loc: "Chennai",
+                        children: [
+                            {
+                                id: "de_abinaya",
+                                name: "Abinaya Raman",
+                                title: "Director",
+                                dept: "",
+                                loc: "Chennai",
+                                children: [
+                                    {
+                                        id: "de_deba",
+                                        name: "Dedbahuti Sharma",
+                                        title: "Sr. Manager",
+                                        dept: "(Azure BDE)",
+                                        loc: "Chennai",
+                                        children: [
+                                            { id: "de_gopal", name: "Gopalram D", title: "Associate", dept: "", loc: "Chennai" },
+                                            { id: "de_sooraj", name: "Sooraj P", title: "Lead", dept: "", loc: "Bangalore" },
+                                            { id: "de_vijai", name: "Vijai Dhanam", title: "Senior Lead", dept: "", loc: "Chennai" },
+                                            {
+                                                id: "de_rohit",
+                                                name: "Rohit Agrawal",
+                                                title: "Senior Lead",
+                                                dept: "",
+                                                loc: "Hyderabad",
+                                                children: [
+                                                    { id: "de_sanjana", name: "Sanjana Patil", title: "Lead", dept: "", loc: "Bangalore" }
+                                                ]
+                                            },
+                                            { id: "de_abhishek", name: "Abhishek Pyase", title: "Sr. Lead", dept: "", loc: "Bangalore" }
+                                        ]
+                                    },
+                                    {
+                                        id: "de_neha",
+                                        name: "Neha Dhingra",
+                                        title: "Associate Director",
+                                        dept: "(DWBI)",
+                                        loc: "Chennai",
+                                        children: [
+                                            { id: "de_kunal", name: "Kunal Arora", title: "Senior Lead", dept: "", loc: "Hyderabad" },
+                                            { id: "de_beena", name: "Beena Thomas", title: "Manager", dept: "", loc: "Bangalore" },
+                                            {
+                                                id: "de_prakash",
+                                                name: "Prakash L",
+                                                title: "Manager",
+                                                dept: "",
+                                                loc: "Chennai",
+                                                children: [
+                                                    { id: "de_janish", name: "Janish Anthony", title: "Associate", dept: "", loc: "Chennai" }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        id: "de_prachi",
+                                        name: "Prachi Singh",
+                                        title: "Manager",
+                                        dept: "(AWS/GCP DG)",
+                                        loc: "Bangalore",
+                                        children: [
+                                            { id: "de_gunit", name: "Gunit Sahani", title: "Senior Lead", dept: "", loc: "Bangalore" },
+                                            { id: "de_mukesh", name: "Mukesh Palani", title: "Senior Lead", dept: "", loc: "Chennai" }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                id: "de_lingaraj",
+                                name: "Lingaraj Nayak",
+                                title: "Manager",
+                                dept: "(COE)",
+                                loc: "Bangalore"
+                            }
+                        ]
+                    }
+                ]
+            },
+            consulting: {
+                id: "c_root",
+                name: "Sanjay Sundaram",
+                title: "Vice President",
+                dept: "",
+                loc: "",
+                children: [
+                    {
+                        id: "c_ayswarya",
+                        name: "Ayswarya J",
+                        title: "Director",
+                        dept: "(Consulting, Sales, QE & EF)",
+                        loc: "Bangalore",
+                        children: [
+                            {
+                                id: "c_ramya",
+                                name: "Ramya Narayanan",
+                                title: "Director",
+                                dept: "(Consulting)",
+                                loc: "Chennai",
+                                children: [
+                                    {
+                                        id: "c_cynthia",
+                                        name: "Cynthia Paulraj",
+                                        title: "Sr. Manager",
+                                        dept: "(QE + PS)",
+                                        loc: "Chennai",
+                                        children: [
+                                            { id: "c_anupallavi", name: "Anupallavi Basavegowda", title: "Lead", dept: "", loc: "Chennai" },
+                                            { id: "c_sangeetha", name: "Sangeetha Dhandayuthapani", title: "Lead", dept: "", loc: "Chennai" }
+                                        ]
+                                    },
+                                    { id: "c_dinesh", name: "Dinesh Patnaik", title: "Senior Lead", dept: "", loc: "Hyderabad" },
+                                    { id: "c_steffie", name: "Steffie Sheeba", title: "Senior Lead", dept: "", loc: "Bangalore" }
+                                ]
+                            },
+                            {
+                                id: "c_mahek",
+                                name: "Mahek Ashok",
+                                title: "Sr. Manager",
+                                dept: "(BD, AM & EF)",
+                                loc: "Chennai",
+                                children: [
+                                    { id: "c_ravneet", name: "Ravneet Singh", title: "Senior Lead", dept: "", loc: "Bangalore" }
+                                ]
+                            },
+                            {
+                                id: "c_gowtham",
+                                name: "Gowtham N",
+                                title: "Manager",
+                                dept: "(BFSI)",
+                                loc: "Chennai",
+                                children: [
+                                    { id: "c_naveen", name: "Naveen", title: "Lead", dept: "", loc: "Chennai" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            ds: {
+                id: "ds_root",
+                name: "Sanjay Sundaram",
+                title: "Vice President",
+                dept: "",
+                loc: "",
+                children: [
+                    {
+                        id: "ds_muthu",
+                        name: "Muthu Thiagarajan",
+                        title: "Director",
+                        dept: "(Data Science Engineering)",
+                        loc: "Chennai",
+                        children: [
+                            {
+                                id: "ds_shafina",
+                                name: "Shafina Basheer",
+                                title: "Sr. Manager",
+                                dept: "(MLE, DevOps, AE & AI Labs)",
+                                loc: "Chennai",
+                                children: [
+                                    { id: "ds_geethanjali", name: "Geethanjali Anilkumar", title: "Lead", dept: "", loc: "Bangalore" },
+                                    { id: "ds_pavithra", name: "Pavithra Kaliyamoorthy", title: "Lead", dept: "", loc: "Chennai" },
+                                    {
+                                        id: "ds_ashwin",
+                                        name: "Ashwin Narayan",
+                                        title: "Senior Lead",
+                                        dept: "",
+                                        loc: "Chennai",
+                                        children: [
+                                            { id: "ds_abirami", name: "Abirami Ramanath", title: "Associate", dept: "", loc: "Chennai" }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                id: "ds_azgar",
+                                name: "Mohammed Azgar",
+                                title: "Sr. Manager",
+                                dept: "(DS)",
+                                loc: "Chennai",
+                                children: [
+                                    { id: "ds_hemapriya", name: "Hemapriya Sathyanarayanan", title: "Senior Associate", dept: "", loc: "Chennai" },
+                                    { id: "ds_niranjan", name: "Niranjan Emmanuel", title: "Senior Lead", dept: "", loc: "Chennai" },
+                                    { id: "ds_vinay", name: "Vinay Sakarkar", title: "Senior Lead", dept: "", loc: "Hyderabad" }
+                                ]
+                            },
+                            { id: "ds_prince", name: "Prince Rajabadhar", title: "Senior Lead", dept: "(COE)", loc: "Chennai" },
+                            { id: "ds_shweta", name: "Shweta Kunwar", title: "Manager", dept: "(DS)", loc: "Chennai" }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // Load trees from localStorage if available, or use initialData
+        let orgData = JSON.parse(localStorage.getItem('tag_org_data')) || JSON.parse(JSON.stringify(initialData));
+
+        let currentSlide = 1;
+        const totalSlides = 5;
+        let selectedNodeId = null;
+        let pendingDeleteId = null;
+
+        // Slide Management
+        function updateSlide() {
+            document.querySelectorAll('.slide-frame').forEach((el, index) => {
+                if (index + 1 === currentSlide) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+            document.getElementById('slide-indicator').innerText = `Slide ${currentSlide} of ${totalSlides}`;
+            autoScaleCurrentTree();
+        }
+
+        function changeSlide(direction) {
+            currentSlide += direction;
+            if (currentSlide < 1) currentSlide = 1;
+            if (currentSlide > totalSlides) currentSlide = totalSlides;
+            updateSlide();
+        }
+
+        // DOM TREE GENERATION ENGINE
+        function renderTree(node, container) {
+            container.innerHTML = '';
+            const rootGroup = createTreeNodeDOM(node);
+            container.appendChild(rootGroup);
+        }
+
+        function createTreeNodeDOM(node) {
+            const group = document.createElement('div');
+            group.className = 'tree-node-group';
+            group.dataset.nodeId = node.id;
+
+            // Card Node Box
+            const card = document.createElement('div');
+            card.className = 'node-card';
+            if (node.id === selectedNodeId) card.classList.add('selected');
+
+            // SVG Avatar Icon
+            const avatarSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f1932a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+
+            card.innerHTML = `
+                <div class="node-actions">
+                    <button class="action-btn" title="Add Child Reportee" onclick="addChildNode('${node.id}', event)"><i class="fa-solid fa-plus"></i></button>
+                    <button class="action-btn" title="Add Peer / Sibling" onclick="addSiblingNode('${node.id}', event)"><i class="fa-solid fa-users"></i></button>
+                    <button class="action-btn" title="Edit Details" onclick="openEditModal('${node.id}', event)"><i class="fa-solid fa-pen"></i></button>
+                    <button class="action-btn delete-btn" title="Delete Branch" onclick="requestDeleteNode('${node.id}', event)"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                <div class="node-avatar">${avatarSvg}</div>
+                <div class="node-name" contenteditable="true" onblur="updateInlineText('${node.id}', 'name', this.innerText)">${node.name}</div>
+                <div class="node-title" contenteditable="true" onblur="updateInlineText('${node.id}', 'title', this.innerText)">${node.title}</div>
+                ${node.dept ? `<div class="node-dept" contenteditable="true" onblur="updateInlineText('${node.id}', 'dept', this.innerText)">${node.dept}</div>` : `<div class="node-dept" contenteditable="true" onblur="updateInlineText('${node.id}', 'dept', this.innerText)"></div>`}
+                ${node.loc ? `<div class="node-loc" contenteditable="true" onblur="updateInlineText('${node.id}', 'loc', this.innerText)">${node.loc}</div>` : `<div class="node-loc" contenteditable="true" onblur="updateInlineText('${node.id}', 'loc', this.innerText)"></div>`}
+            `;
+
+            card.onclick = (e) => {
+                if (e.target.isContentEditable || e.target.closest('.node-actions')) return;
+                selectNode(node.id);
+            };
+
+            group.appendChild(card);
+
+            // Render Children recursively
+            if (node.children && node.children.length > 0) {
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'tree-children';
+                node.children.forEach(child => {
+                    childrenContainer.appendChild(createTreeNodeDOM(child));
+                });
+                group.appendChild(childrenContainer);
+            }
+
+            return group;
+        }
+
+        // AUTO-SCALE ENGINE TO FIT ALL NAMES COMPLETELY WITHIN SLIDE VIEWPORT
+        function autoScaleCurrentTree() {
+            let containerId = null;
+            if (currentSlide === 2) containerId = 'tree-container-de';
+            else if (currentSlide === 3) containerId = 'tree-container-consulting';
+            else if (currentSlide === 4) containerId = 'tree-container-ds';
+            if (!containerId) return;
+
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const treeRoot = container.querySelector('.tree-node-group');
+            if (!treeRoot) return;
+
+            // Reset scale first to obtain unscaled dimensions
+            treeRoot.style.transform = 'none';
+
+            setTimeout(() => {
+                const availWidth = container.clientWidth - 40;
+                const availHeight = container.clientHeight - 40;
+                const treeWidth = treeRoot.scrollWidth;
+                const treeHeight = treeRoot.scrollHeight;
+
+                if (treeWidth > 0 && treeHeight > 0) {
+                    const scaleX = availWidth / treeWidth;
+                    const scaleY = availHeight / treeHeight;
+                    let scale = Math.min(1, scaleX, scaleY);
+                    if (scale < 0.5) scale = 0.5; // floor scale limit
+
+                    if (scale < 0.98) {
+                        treeRoot.style.transform = `scale(${scale.toFixed(3)})`;
+                    } else {
+                        treeRoot.style.transform = 'none';
+                    }
+                }
+            }, 50);
+        }
+
+        function renderAllCharts() {
+            renderTree(orgData.de, document.getElementById('tree-container-de'));
+            renderTree(orgData.consulting, document.getElementById('tree-container-consulting'));
+            renderTree(orgData.ds, document.getElementById('tree-container-ds'));
+            saveToLocalStorage();
+            autoScaleCurrentTree();
+        }
+
+        window.onresize = function() {
+            autoScaleCurrentTree();
+        };
+
+        // HELPER FUNCTIONS TO FIND AND MUTATE TREE
+        function getCurrentStreamKey() {
+            if (currentSlide === 2) return 'de';
+            if (currentSlide === 3) return 'consulting';
+            if (currentSlide === 4) return 'ds';
+            return null;
+        }
+
+        function findNodeAndParent(tree, id, parent = null) {
+            if (tree.id === id) return { node: tree, parent };
+            if (tree.children) {
+                for (let child of tree.children) {
+                    const res = findNodeAndParent(child, id, tree);
+                    if (res) return res;
+                }
+            }
+            return null;
+        }
+
+        function renderAllCharts() {
+            renderTree(orgData.de, document.getElementById('tree-container-de'));
+            renderTree(orgData.consulting, document.getElementById('tree-container-consulting'));
+            renderTree(orgData.ds, document.getElementById('tree-container-ds'));
+            saveToLocalStorage();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('tag_org_data', JSON.stringify(orgData));
+        }
+
+        function selectNode(id) {
+            selectedNodeId = id;
+            document.querySelectorAll('.node-card').forEach(el => el.classList.remove('selected'));
+            const matched = document.querySelector(`[data-node-id="${id}"] > .node-card`);
+            if (matched) matched.classList.add('selected');
+        }
+
+        // INLINE & MODAL EDITING
+        function updateInlineText(id, field, value) {
+            const key = getCurrentStreamKey();
+            if (!key) return;
+            const res = findNodeAndParent(orgData[key], id);
+            if (res) {
+                res.node[field] = value.trim();
+                saveToLocalStorage();
+            }
+        }
+
+        // ADD / DELETE / EDIT ACTIONS
+        function addChildNode(parentId, event) {
+            if (event) event.stopPropagation();
+            const key = getCurrentStreamKey();
+            if (!key) return;
+
+            const res = findNodeAndParent(orgData[key], parentId);
+            if (res) {
+                if (!res.node.children) res.node.children = [];
+                const newId = key + '_' + Date.now();
+                res.node.children.push({
+                    id: newId,
+                    name: "New Reportee",
+                    title: "Lead / Associate",
+                    dept: "",
+                    loc: "Chennai"
+                });
+                renderAllCharts();
+                selectNode(newId);
+            }
+        }
+
+        function addSiblingNode(targetId, event) {
+            if (event) event.stopPropagation();
+            const key = getCurrentStreamKey();
+            if (!key) return;
+
+            const res = findNodeAndParent(orgData[key], targetId);
+            if (res && res.parent) {
+                const newId = key + '_' + Date.now();
+                const targetIdx = res.parent.children.findIndex(c => c.id === targetId);
+                res.parent.children.splice(targetIdx + 1, 0, {
+                    id: newId,
+                    name: "New Member",
+                    title: "Manager / Lead",
+                    dept: "",
+                    loc: "Bangalore"
+                });
+                renderAllCharts();
+                selectNode(newId);
+            }
+        }
+
+        function requestDeleteNode(id, event) {
+            if (event) event.stopPropagation();
+            const key = getCurrentStreamKey();
+            if (!key) return;
+
+            const res = findNodeAndParent(orgData[key], id);
+            if (!res) return;
+
+            if (!res.parent) {
+                document.getElementById('delete-modal-msg').innerText = "The top-level Vice President node cannot be deleted.";
+                document.querySelector('#delete-modal .btn-danger').style.display = 'none';
+                document.getElementById('delete-modal').classList.add('open');
+                return;
+            }
+
+            pendingDeleteId = id;
+            document.querySelector('#delete-modal .btn-danger').style.display = 'inline-flex';
+            document.getElementById('delete-modal-msg').innerText = `Are you sure you want to delete ${res.node.name} (${res.node.title}) and all associated reportees?`;
+            document.getElementById('delete-modal').classList.add('open');
+        }
+
+        function closeDeleteModal() {
+            pendingDeleteId = null;
+            document.getElementById('delete-modal').classList.remove('open');
+        }
+
+        function executePendingDelete() {
+            if (!pendingDeleteId) return;
+            const key = getCurrentStreamKey();
+            if (!key) return;
+
+            const res = findNodeAndParent(orgData[key], pendingDeleteId);
+            if (res && res.parent) {
+                res.parent.children = res.parent.children.filter(c => c.id !== pendingDeleteId);
+                renderAllCharts();
+            }
+            closeDeleteModal();
+        }
+
+        function addNewRootOrReportee() {
+            const key = getCurrentStreamKey();
+            if (!key) return;
+            if (selectedNodeId) {
+                addChildNode(selectedNodeId);
+            } else {
+                addChildNode(orgData[key].id);
+            }
+        }
+
+        // MODAL HANDLERS
+        function openEditModal(id, event) {
+            if (event) event.stopPropagation();
+            const key = getCurrentStreamKey();
+            if (!key) return;
+
+            const res = findNodeAndParent(orgData[key], id);
+            if (!res) return;
+
+            const node = res.node;
+            document.getElementById('edit-node-id').value = node.id;
+            document.getElementById('input-name').value = node.name || '';
+            document.getElementById('input-title').value = node.title || '';
+            document.getElementById('input-dept').value = node.dept || '';
+            document.getElementById('input-loc').value = node.loc || 'Chennai';
+
+            document.getElementById('edit-modal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').classList.remove('open');
+        }
+
+        function saveNodeModal(event) {
+            event.preventDefault();
+            const id = document.getElementById('edit-node-id').value;
+            const key = getCurrentStreamKey();
+            if (!key) return;
+
+            const res = findNodeAndParent(orgData[key], id);
+            if (res) {
+                res.node.name = document.getElementById('input-name').value;
+                res.node.title = document.getElementById('input-title').value;
+                res.node.dept = document.getElementById('input-dept').value;
+                res.node.loc = document.getElementById('input-loc').value;
+
+                renderAllCharts();
+                closeModal();
+            }
+        }
+
+        // SEARCH FUNCTION
+        function searchOrgTree(query) {
+            document.querySelectorAll('.node-card').forEach(el => el.classList.remove('search-match'));
+            if (!query || query.trim() === '') return;
+
+            const q = query.toLowerCase().trim();
+            document.querySelectorAll('.node-card').forEach(card => {
+                const name = card.querySelector('.node-name')?.innerText.toLowerCase() || '';
+                const title = card.querySelector('.node-title')?.innerText.toLowerCase() || '';
+                const dept = card.querySelector('.node-dept')?.innerText.toLowerCase() || '';
+                const loc = card.querySelector('.node-loc')?.innerText.toLowerCase() || '';
+
+                if (name.includes(q) || title.includes(q) || dept.includes(q) || loc.includes(q)) {
+                    card.classList.add('search-match');
+                }
+            });
+        }
+
+        // SAVE & RESET
+        function exportOrgData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(orgData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "tag_org_structure.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function resetDefaultTree() {
+            orgData = JSON.parse(JSON.stringify(initialData));
+            renderAllCharts();
+        }
+
+        // INITIALIZATION
+        window.onload = function() {
+            renderAllCharts();
+            updateSlide();
+        };
+    </script>
+</body>
+</html>
